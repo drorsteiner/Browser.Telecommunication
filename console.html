@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en" >
+	<!-- begin::Head -->
+	<head>
+		<meta charset="utf-8" /> 
+        <script src="./twilio.min.js" type="text/javascript"></script>  
+<script src="https://code.jquery.com/jquery-3.7.1.min.js" integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>	
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>	
+	</head>
+	<!-- end::Head -->
+    <!-- end::Body -->
+	<body  >
+		<h1>Twilio Browser Phone</h1>
+		<button id="startup-button">Start Browser Phone</button>&nbsp;&nbsp;&nbsp;&nbsp;<button style="display:none;background-color:red;color:white" id="endcall-button">End Call</button> <br/><br/>
+		<span   id="spnDevice" >Phone Status</span> <br> 	
+		<span   id="spnCall" >Call Status</span> <br> 
+		<script>
+			let startupButton = document.getElementById("startup-button");
+			let endcallButton = document.getElementById("endcall-button");
+		  
+			var scallid   = "";
+			let device; let token; let incall;
+			
+			startupButton.addEventListener("click", startupClient);
+			endcallButton.addEventListener("click", endcall);
+			
+			function endcall(){
+				incall.disconnect();
+			}
+ 
+			async function startupClient() { 
+				try { 
+					const data = await $.getJSON("https://sienna-quoll-6614.twil.io/token?identity=dror"); 
+					token = data.token; 
+					intitializeDevice(); 
+				} catch (err) { 
+					console.log(err); 
+				} 
+			} 
+			
+			function intitializeDevice() { 
+				device = new Twilio.Device(token, {logLevel: 1, codecPreferences: ["opus", "pcmu"]}); 
+				
+				addDeviceListeners(device);
+ 
+				device.register(); 
+				
+			}
+			
+			function addDeviceListeners(device) {
+				device.on("registered", function () {
+					$("#spnDevice").html("Phone Registered");
+				});
+				
+				device.on("unregistered", function () {
+					$("#spnDevice").html("Phone Unregistered");
+				});
+				
+				device.on("error", function (error) {
+				   $("#spnDevice").html(error.message);  
+				});
+
+				device.on("incoming", handleIncomingCall);
+ 
+			}			
+ 			 
+			function handleIncomingCall(call) {
+				incall = call;
+				swal.fire({ 
+						 text: "You have a Call.", 
+						 icon: "info", 
+						 showCancelButton: true, 
+						 confirmButtonText: "Accept", 
+						 cancelButtonText: "Reject", 
+						 }).then(function(result){ 					 
+						 if (result.value) { 
+							call.accept();  
+						 } else if (result.dismiss === "cancel") { 
+							call.reject(); 
+						 } 
+						 });
+				call.on("accept", updateUIAcceptedOutgoingCall);
+				call.on("disconnect", updateUIDisconnectedOutgoingCall);	
+			}
+			
+			function updateUIAcceptedOutgoingCall() {
+				$("#endcall-button").show(); 
+				$("#spnCall").html("Call Accepted"); 
+			}
+
+			function updateUIDisconnectedOutgoingCall() {
+				$("#endcall-button").hide(); 
+				$("#spnCall").html("Call Disconnected");	
+			} 
+		</script>
+	</body>
+</html>	
+		
